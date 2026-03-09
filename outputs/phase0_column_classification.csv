@@ -1,0 +1,98 @@
+column_name,files_count,coverage_pct,bucket
+From Date,453,100.0,metadata
+To Date,453,100.0,metadata
+NO2 (ug/m3),452,99.8,air_pollution
+PM2.5 (ug/m3),449,99.1,air_pollution
+PM10 (ug/m3),445,98.2,air_pollution
+NO (ug/m3),445,98.2,air_pollution
+CO (mg/m3),435,96.0,unclassified
+NOx (ppb),434,95.8,unclassified
+SO2 (ug/m3),433,95.6,air_pollution
+Ozone (ug/m3),433,95.6,air_pollution
+WS (m/s),420,92.7,weather
+Benzene (ug/m3),417,92.1,voc
+RH (%),412,90.9,weather
+NH3 (ug/m3),399,88.1,air_pollution
+Toluene (ug/m3),397,87.6,voc
+SR (W/mt2),383,84.5,weather
+RF (mm),372,82.1,weather
+AT (degree C),371,81.9,weather
+Eth-Benzene (ug/m3),353,77.9,voc
+MP-Xylene (ug/m3),341,75.3,voc
+WD (degree),341,75.3,weather
+Xylene (ug/m3),299,66.0,voc
+BP (mmHg),275,60.7,weather
+O Xylene (ug/m3),224,49.4,voc
+Temp (degree C),135,29.8,duplicate_of → AT (degree C)
+VWS (m/s),118,26.0,duplicate_of → WS (m/s)
+WD (deg),76,16.8,duplicate_of → WD (degree)
+NOx (ug/m3),13,2.9,duplicate_of → NOx (ppb)
+CO (ug/m3),12,2.6,air_pollution
+AT (),10,2.2,duplicate_of → AT (degree C)
+CH4 (ug/m3),10,2.2,minor
+CO2 (mg/m3),9,2.0,minor
+Temp (),9,2.0,duplicate_of → AT (degree C)
+Power (W),8,1.8,drop
+Variance (n),8,1.8,drop
+NMHC (ug/m3),5,1.1,minor
+THC (ug/m3),5,1.1,minor
+RH (),5,1.1,duplicate_of → RH (%)
+RH (W/mt2),4,0.9,duplicate_of → RH (%)
+Xylene (),4,0.9,duplicate_of → Xylene (ug/m3)
+RF (),4,0.9,duplicate_of → RF (mm)
+AT (degree),4,0.9,duplicate_of → AT (degree C)
+WD (degree C),4,0.9,duplicate_of → WD (degree)
+WS (),4,0.9,duplicate_of → WS (m/s)
+WD (),4,0.9,duplicate_of → WD (degree)
+Gust (km/hr),4,0.9,drop
+Toluene (),4,0.9,duplicate_of → Toluene (ug/m3)
+NH3 (),4,0.9,duplicate_of → NH3 (ug/m3)
+SR (),3,0.7,duplicate_of → SR (W/mt2)
+CH4 (),3,0.7,duplicate_of → CH4 (ug/m3)
+Benzene (),3,0.7,duplicate_of → Benzene (ug/m3)
+MP-Xylene (),3,0.7,duplicate_of → MP-Xylene (ug/m3)
+Ozone (),3,0.7,duplicate_of → Ozone (ug/m3)
+RF (mm).6,2,0.4,duplicate_of → RF (mm)
+NMHC (),2,0.4,duplicate_of → NMHC (ug/m3)
+NOx (ppm),2,0.4,duplicate_of → NOx (ppb)
+Eth-Benzene (),2,0.4,duplicate_of → Eth-Benzene (ug/m3)
+SO2 (),2,0.4,duplicate_of → SO2 (ug/m3)
+RF (mm).3,2,0.4,duplicate_of → RF (mm)
+RF (mm).4,2,0.4,duplicate_of → RF (mm)
+BP (),2,0.4,duplicate_of → BP (mmHg)
+Gust (kl/h),2,0.4,drop
+SPM (ug/m3),2,0.4,minor
+SR (ug/m3),2,0.4,duplicate_of → SR (W/mt2)
+Gust (m/s),2,0.4,drop
+RF (mm).7,2,0.4,duplicate_of → RF (mm)
+RF (mm).2,2,0.4,duplicate_of → RF (mm)
+RF (mm).1,2,0.4,duplicate_of → RF (mm)
+THC (),2,0.4,duplicate_of → THC (ug/m3)
+RF (mm).5,2,0.4,duplicate_of → RF (mm)
+CO (mg/Nm3),1,0.2,duplicate_of → CO (mg/m3)
+VWS (degree),1,0.2,drop
+NO (mg/m3),1,0.2,duplicate_of → NO (ug/m3)
+Temp (ug/m3),1,0.2,duplicate_of → AT (degree C)
+Hg (ug/m3),1,0.2,minor
+HCHO (ug/m3),1,0.2,minor
+CO (ng/m3),1,0.2,duplicate_of → CO (mg/m3)
+Ozone (ppb),1,0.2,duplicate_of → Ozone (ug/m3)
+RF (m/s),1,0.2,duplicate_of → RF (mm)
+MH (m),1,0.2,drop
+BP (mmHg).5,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).7,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).6,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).4,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).1,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).2,1,0.2,duplicate_of → BP (mmHg)
+BP (mmHg).3,1,0.2,duplicate_of → BP (mmHg)
+WS (ug/m3),1,0.2,duplicate_of → WS (m/s)
+NO (),1,0.2,duplicate_of → NO (ug/m3)
+AT (ug/m3),1,0.2,duplicate_of → AT (degree C)
+RH (degree),1,0.2,duplicate_of → RH (%)
+NO (ppm),1,0.2,duplicate_of → NO (ug/m3)
+NO (ppb),1,0.2,duplicate_of → NO (ug/m3)
+Benzene (mg/m3),1,0.2,duplicate_of → Benzene (ug/m3)
+BP (mg/m3),1,0.2,duplicate_of → BP (mmHg)
+NH3 (ppb),1,0.2,duplicate_of → NH3 (ug/m3)
+BP (W/mt2),1,0.2,duplicate_of → BP (mmHg)
