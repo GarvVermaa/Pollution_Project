@@ -1,0 +1,22 @@
+cause_name,pearson_r,p_value,n_observations,significant_05,evidence_strength
+Upper respiratory infections,0.6842,0.0,96,True,strong
+Neonatal encephalopathy due to birth asphyxia and trauma,0.6644,0.0,96,True,indirect
+Neonatal preterm birth,0.4978,0.0,96,True,indirect
+Otitis media,0.436,9e-06,96,True,strong
+Lower respiratory infections,0.4042,4.4e-05,96,True,strong
+Congenital birth defects,0.3725,0.000186,96,True,indirect
+Asthma,0.3617,0.000294,96,True,direct
+Tuberculosis,0.356,0.000372,96,True,strong
+Chronic respiratory diseases,0.1924,0.060313,96,False,direct
+Chronic obstructive pulmonary disease,0.1819,0.076126,96,False,direct
+Pulmonary aspiration and foreign body in airway,0.0282,0.784899,96,False,direct
+Respiratory infections and tuberculosis,-0.155,0.131535,96,False,strong
+"Tracheal, bronchus, and lung cancer",-0.2048,0.045348,96,True,direct
+Stroke,-0.3261,0.001187,96,True,direct
+Ischemic stroke,-0.3291,0.001059,96,True,direct
+Interstitial lung disease and pulmonary sarcoidosis,-0.3304,0.00101,96,True,direct
+Pulmonary Arterial Hypertension,-0.347,0.000533,96,True,direct
+Ischemic heart disease,-0.4265,1.5e-05,96,True,direct
+Cardiovascular diseases,-0.5552,0.0,96,True,direct
+Hypertensive heart disease,-0.5564,0.0,96,True,direct
+Atrial fibrillation and flutter,-0.5772,0.0,96,True,direct

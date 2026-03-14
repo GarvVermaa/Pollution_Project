@@ -1,0 +1,22 @@
+cause_name,train_r2,test_r2,test_mae,n_train,n_test,PM2.5 (ug/m3)_mean,AQI_annual_mean,pct_months_Worst
+Cardiovascular diseases,0.4462,0.2911,44.8052,37,59,1.4428,-61.7507,25.2747
+Hypertensive heart disease,0.4339,0.2372,3.0874,37,59,-0.7858,-2.8969,1.5599
+Neonatal encephalopathy due to birth asphyxia and trauma,0.7099,0.1456,2.1685,37,59,2.5935,-0.3418,1.1957
+Atrial fibrillation and flutter,0.5522,0.1389,0.6597,37,59,-0.0877,-0.4668,0.1051
+Ischemic heart disease,0.2851,0.1357,38.1768,37,59,0.5745,-40.8796,17.179
+Pulmonary Arterial Hypertension,0.2255,0.0937,0.0543,37,59,-0.0033,-0.0549,0.0301
+Congenital birth defects,0.1871,0.0732,2.2486,37,59,2.3105,-0.6763,-0.4639
+Ischemic stroke,0.1546,0.0572,11.0889,37,59,1.3604,-6.1486,1.0902
+Stroke,0.1306,0.0296,23.4615,37,59,2.111,-13.5416,4.2967
+Chronic obstructive pulmonary disease,0.1856,-0.1104,13.8717,37,59,6.0911,2.4111,-1.8733
+Chronic respiratory diseases,0.2071,-0.1239,17.3584,37,59,7.5027,2.1717,-0.7677
+Interstitial lung disease and pulmonary sarcoidosis,0.0501,-0.1322,0.8347,37,59,-0.0489,-0.1686,0.1212
+Pulmonary aspiration and foreign body in airway,0.2755,-0.1568,0.1276,37,59,0.1931,-0.2496,0.0563
+Asthma,0.3858,-0.1768,2.5007,37,59,1.457,-0.1765,0.9744
+Upper respiratory infections,0.6731,-0.3384,0.0237,37,59,0.0084,0.0072,0.0129
+Lower respiratory infections,0.4573,-0.4378,10.3606,37,59,-5.4922,15.1263,-2.8929
+"Tracheal, bronchus, and lung cancer",0.0121,-0.4971,2.7836,37,59,0.8404,-0.721,-0.1844
+Tuberculosis,0.4287,-0.5128,7.1005,37,59,-4.9821,8.0342,2.3864
+Neonatal preterm birth,0.5194,-0.5229,6.7781,37,59,-4.568,10.9075,-0.5363
+Otitis media,0.4239,-0.5582,0.0014,37,59,-0.0001,0.0004,0.0006
+Respiratory infections and tuberculosis,0.4845,-0.6751,54.6102,37,59,-10.466,23.1681,-0.493

@@ -1,0 +1,2 @@
+task,model,target,features,train_years,test_years,n_train,n_test,lr_test_r2,rf_test_r2,best_test_r2,best_test_mae
+Task A,Random Forest,PM25_next,"['PM25_lag1', 'PM25_lag2', 'AT (degree C)_mean', 'RH (%)_mean', 'WS (m/s)_mean', 'RF (mm)_mean', 'month_sin', 'month_cos', 'year']",up to 2020,2021+,1203,1202,0.4775,0.5943,0.5943,16.04
