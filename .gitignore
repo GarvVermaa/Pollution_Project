@@ -11,5 +11,7 @@ ml_model/air_pollution_with_aqi.csv
 .env.local
 .env.production
  
+ml_model/air_pollution_with_aqi.csv
+outputs/air_pollution_with_aqi.csv
 
-data/
+ml_model/data

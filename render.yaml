@@ -1,5 +1,4 @@
 services:
-  
   - type: web
     name: vayu-ml-service
     runtime: python
@@ -8,7 +7,6 @@ services:
     startCommand: python ml_service.py
     plan: free
 
-  
   - type: web
     name: vayu-backend
     runtime: node
@@ -18,13 +16,10 @@ services:
     plan: free
     envVars:
       - key: ML_SERVICE_URL
-       
         value: https://vayu-ml-service.onrender.com
       - key: FRONTEND_URL
-        
         value: https://vayu-frontend.onrender.com
 
-  
   - type: web
     name: vayu-frontend
     runtime: static
