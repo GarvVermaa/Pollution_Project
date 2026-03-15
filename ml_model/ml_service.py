@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)
@@ -219,7 +220,9 @@ def health():
 # ── Entry point ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     load_models()
-    print("✅  ML service running at http://localhost:5001")
-    print("    Health: http://localhost:5001/health")
-    print("    Test:   http://localhost:5001/predict?city=Delhi")
-    app.run(host="0.0.0.0", port=5001, debug=False)
+    # Read PORT from environment — Render injects this automatically
+    port = int(os.environ.get("PORT", 5001))
+    print(f"✅  ML service running on port {port}")
+    print(f"    Health: http://localhost:{port}/health")
+    print(f"    Test:   http://localhost:{port}/predict?city=Delhi")
+    app.run(host="0.0.0.0", port=port, debug=False)

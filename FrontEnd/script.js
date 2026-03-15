@@ -1,5 +1,7 @@
 "use strict";
 
+const API_BASE_URL = window.VAYU_API_BASE || "http://localhost:5000/api";
+
 window.addEventListener("load", () => {
   const svg = document.getElementById("canvas-svg");
   const app = document.getElementById("app");

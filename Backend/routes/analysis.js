@@ -12,8 +12,8 @@ const cityData = JSON.parse(readFileSync(join(__dirname, "../data/city_data.json
 const corrData = JSON.parse(readFileSync(join(__dirname, "../data/corr_data.json"), "utf8"));
 const metaData = JSON.parse(readFileSync(join(__dirname, "../data/meta_data.json"), "utf8"));
 
-// ML service is the Python Flask app running on port 5001
-const ML_SERVICE_URL = "http://localhost:5001";
+// ML service URL — set ML_SERVICE_URL env var on Render to the internal URL of vayu-ml-service
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
 
 // CPCB live API key
 const CPCB_API_KEY = "579b464db66ec23bdd0000016e3b38c59991434d4ddf38a3b7f5e077";
