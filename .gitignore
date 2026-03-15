@@ -7,3 +7,11 @@ __pycache__/
 
 # Large data files (too big for GitHub)
 ml_model/air_pollution_with_aqi.csv
+
+.env
+.env.local
+.env.production
+ 
+outputs/air_pollution_with_aqi.csv
+
+ml_model/data

@@ -1,5 +1,7 @@
 "use strict";
 
+const API_BASE_URL = window.VAYU_API_BASE || "http://localhost:5000/api";
+
 window.addEventListener("load", () => {
   const svg = document.getElementById("canvas-svg");
   const app = document.getElementById("app");
@@ -292,7 +294,7 @@ window.addEventListener("load", () => {
     newNode.dataset.lat = cLL.lat;
     newNode.dataset.lng = cLL.lng;
 
-    const API_BASE = "http://localhost:5000/api";
+    const API_BASE = API_BASE_URL;
     // City name stored on the root node when the marker was clicked
     const cityName = data.cityName || "";
 
@@ -583,7 +585,7 @@ window.addEventListener("load", () => {
   document.body.appendChild(loadingBar);
 
   async function fetchPollutionData() {
-    const API_BASE = "http://localhost:5000/api";
+    const API_BASE = API_BASE_URL;
     const url =
       "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69" +
       "?api-key=579b464db66ec23bdd0000016e3b38c59991434d4ddf38a3b7f5e077" +

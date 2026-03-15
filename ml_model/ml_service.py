@@ -33,6 +33,8 @@ import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
+load_dotenv() 
 
 app = Flask(__name__)
 CORS(app)
@@ -42,8 +44,7 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 
 # CSV data lives one level up in Backend/data/
-DATA_DIR = os.path.join(BASE_DIR, "..", "Backend", "data")
-AQI_CSV  = os.path.join(DATA_DIR, "city_data.json")   # already parsed JSON
+AQI_CSV = os.path.join(BASE_DIR, "city_data.json")
 
 # ── Load model + scaler at startup ───────────────────────────────────
 rf_model = None
@@ -219,7 +220,9 @@ def health():
 # ── Entry point ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     load_models()
-    print("✅  ML service running at http://localhost:5001")
-    print("    Health: http://localhost:5001/health")
-    print("    Test:   http://localhost:5001/predict?city=Delhi")
-    app.run(host="0.0.0.0", port=5001, debug=False)
+    # Read PORT from environment — Render injects this automatically
+    port = int(os.environ.get("PORT", 5001))
+    print(f"✅  ML service running on port {port}")
+    print(f"    Health: http://localhost:{port}/health")
+    print(f"    Test:   http://localhost:{port}/predict?city=Delhi")
+    app.run(host="0.0.0.0", port=port, debug=False)
