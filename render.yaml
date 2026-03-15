@@ -19,8 +19,3 @@ services:
         value: https://vayu-ml-service.onrender.com
       - key: FRONTEND_URL
         value: https://vayu-frontend.onrender.com
-
-  - type: static
-    name: vayu-frontend
-    rootDir: FrontEnd
-    staticPublishPath: .
