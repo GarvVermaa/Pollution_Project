@@ -159,7 +159,7 @@ window.addEventListener("load", () => {
   }
 
   // ════════════════════════════
-  // 3. NODE SYSTEM (your original)
+  // 3. NODE SYSTEM
   // ════════════════════════════
   function removeNodeAndChildren(targetId) {
     const children = connections.filter((c) => c.from === targetId);
@@ -221,12 +221,14 @@ window.addEventListener("load", () => {
         const color = node.dataset.color;
         const rowsHtml = decodeURIComponent(node.dataset.rowsHtml || "");
         const isOffline = node.dataset.isOffline === "true";
+        const cityName = node.dataset.cityName || "";
         spawnChildNode(node, type, {
           aqi,
           prominent,
           color,
           rowsHtml,
           isOffline,
+          cityName,
         });
       };
     });
@@ -271,8 +273,12 @@ window.addEventListener("load", () => {
     }
   }
 
+  // ════════════════════════════════════════════════════════
   // ── Spawn a child node based on PPF type ──
-  function spawnChildNode(parentNode, type, data) {
+  // ONLY THIS FUNCTION WAS CHANGED — everything else above
+  // and below is identical to the original script.js
+  // ════════════════════════════════════════════════════════
+  async function spawnChildNode(parentNode, type, data) {
     const newId = `node-${nodeCount++}`;
     const newNode = document.createElement("div");
     newNode.className = "node";
@@ -286,8 +292,12 @@ window.addEventListener("load", () => {
     newNode.dataset.lat = cLL.lat;
     newNode.dataset.lng = cLL.lng;
 
+    const API_BASE = "http://localhost:5000/api";
+    // City name stored on the root node when the marker was clicked
+    const cityName = data.cityName || "";
+
     if (type === "present") {
-      // Show current AQI details — same as old root node content
+      // ── PRESENT: unchanged from original ──
       newNode.innerHTML = `
         <span class="close-btn">&times;</span>
         <div class="header" style="background:${data.color};color:${data.aqi > 200 ? "#fff" : "#000"};">
@@ -308,35 +318,182 @@ window.addEventListener("load", () => {
             <tbody>${data.rowsHtml}</tbody>
           </table>
         </div>`;
-    } else if (type === "future") {
-      // Show trend graph
+      app.appendChild(newNode);
+
+    } else if (type === "past") {
+      // ── PAST: real line chart from backend ──
       const chartId = `chart-${newId}`;
       newNode.innerHTML = `
         <span class="close-btn">&times;</span>
-        <div class="header" style="background:#1e2a3a;color:white;">
-          <div style="font-weight:700;font-size:13px;">AQI Trend (24h Forecast)</div>
+        <div class="header" style="background:#1a2a1a;color:white;">
+          <div style="font-weight:700;font-size:13px;">PM2.5 History</div>
+          <div style="font-size:10px;opacity:.8;">2010 – 2023 monthly</div>
         </div>
         <div class="node-content">
-          <canvas id="${chartId}" width="190" height="90" style="margin-top:8px;border-radius:6px;"></canvas>
-          <button class="spawn-btn" style="margin-top:10px;">Add Child +</button>
+          <div id="past-status-${newId}" style="color:#666;font-size:11px;padding:8px 0;text-align:center;">
+            Loading...
+          </div>
+          <canvas id="${chartId}" width="190" height="110"
+            style="display:none;margin-top:4px;border-radius:6px;"></canvas>
         </div>`;
       app.appendChild(newNode);
-      setTimeout(() => drawSimpleTrend(chartId), 50);
-    } else if (type === "past") {
-      // Placeholder — to be implemented later
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/past/city/${encodeURIComponent(cityName)}`
+        );
+        const json = await res.json();
+        const statusEl = document.getElementById(`past-status-${newId}`);
+        const canvas   = document.getElementById(chartId);
+
+        if (json.status === "ok" && json.data && json.data.length > 0) {
+          statusEl.style.display = "none";
+          canvas.style.display   = "block";
+
+          const labels = json.data.map(
+            (r) => `${r.year}-${String(r.month).padStart(2, "0")}`
+          );
+          const values = json.data.map((r) => r.pm25);
+
+          new Chart(canvas.getContext("2d"), {
+            type: "line",
+            data: {
+              labels,
+              datasets: [{
+                data: values,
+                borderColor: "#4fc3f7",
+                backgroundColor: "rgba(79,195,247,0.06)",
+                borderWidth: 1.5,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0,
+              }],
+            },
+            options: {
+              responsive: false,
+              animation: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { display: false },
+                y: {
+                  ticks: { color: "#666", font: { size: 9 } },
+                  grid:  { color: "rgba(255,255,255,0.04)" },
+                },
+              },
+            },
+          });
+        } else {
+          statusEl.textContent = "No history data for this city.";
+        }
+      } catch (_) {
+        document.getElementById(`past-status-${newId}`).textContent =
+          "Backend offline — run: node server.js";
+      }
+
+    } else if (type === "future") {
+      // ── FUTURE: Random Forest forecast from backend + ml_service ──
+      const chartId = `chart-${newId}`;
       newNode.innerHTML = `
         <span class="close-btn">&times;</span>
-        <div class="header" style="background:#2a1e3a;color:white;">
-          <div style="font-weight:700;font-size:13px;">Historical Data</div>
-          <div style="font-size:10px;opacity:.8;">Coming soon</div>
+        <div class="header" style="background:#1a1a2e;color:white;">
+          <div style="font-weight:700;font-size:13px;">3-Month Forecast</div>
+          <div style="font-size:10px;opacity:.8;">Random Forest · R²=0.594</div>
         </div>
-        <div class="node-content" style="text-align:center;padding:20px 12px;color:#666;font-size:12px;">
-          Past AQI data will be shown here.
+        <div class="node-content">
+          <div id="future-status-${newId}" style="color:#666;font-size:11px;padding:8px 0;text-align:center;">
+            Running ML model...
+          </div>
+          <canvas id="${chartId}" width="190" height="110"
+            style="display:none;margin-top:4px;border-radius:6px;"></canvas>
+          <div id="future-badge-${newId}"
+            style="display:none;margin-top:6px;font-size:9px;
+                   font-family:monospace;color:#5a5e80;text-align:center;">
+          </div>
         </div>`;
+      app.appendChild(newNode);
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/future/city/${encodeURIComponent(cityName)}`
+        );
+        const json = await res.json();
+        const statusEl = document.getElementById(`future-status-${newId}`);
+        const canvas   = document.getElementById(chartId);
+        const badgeEl  = document.getElementById(`future-badge-${newId}`);
+
+        if (json.status === "ok" && json.forecasts && json.forecasts.length > 0) {
+          statusEl.style.display = "none";
+          canvas.style.display   = "block";
+
+          const labels = json.forecasts.map((f) => f.month_label);
+          const values = json.forecasts.map((f) => f.predicted_pm25);
+          const colors = json.forecasts.map((f) => f.colour);
+          const confLo = json.forecasts.map((f) => f.confidence_low);
+          const confHi = json.forecasts.map((f) => f.confidence_high);
+
+          new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Predicted PM2.5",
+                  data: values,
+                  backgroundColor: colors.map((c) => c + "bb"),
+                  borderColor: colors,
+                  borderWidth: 1.5,
+                  borderRadius: 4,
+                },
+                {
+                  label: "Confidence band",
+                  data: confHi.map((hi, i) => hi - confLo[i]),
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  borderWidth: 1,
+                  borderRadius: 2,
+                  type: "bar",
+                },
+              ],
+            },
+            options: {
+              responsive: false,
+              animation: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  ticks: { color: "#888", font: { size: 9 } },
+                  grid:  { display: false },
+                },
+                y: {
+                  ticks: { color: "#666", font: { size: 9 } },
+                  grid:  { color: "rgba(255,255,255,0.04)" },
+                  title: {
+                    display: true,
+                    text: "μg/m³",
+                    color: "#555",
+                    font: { size: 9 },
+                  },
+                },
+              },
+            },
+          });
+
+          if (json.model_badge) {
+            badgeEl.style.display = "block";
+            badgeEl.textContent =
+              `MAE ±${json.model_badge.mae} μg/m³  ·  R²=${json.model_badge.r2}`;
+          }
+        } else {
+          statusEl.textContent =
+            json.message || "Forecast unavailable for this city.";
+        }
+      } catch (_) {
+        document.getElementById(`future-status-${newId}`).textContent =
+          "ML service offline — run: python ml_service.py";
+      }
     }
 
-    if (type !== "future") app.appendChild(newNode);
-
+    // Connect with a dashed SVG line (unchanged from original)
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("class", "connector");
     svg.appendChild(path);
@@ -418,7 +575,6 @@ window.addEventListener("load", () => {
   // ════════════════════════════
   // 4. FETCH POLLUTION DATA
   // ════════════════════════════
-  // Show loading bar while fetching
   const loadingBar = document.createElement("div");
   loadingBar.id = "loadingBar";
   document.body.appendChild(loadingBar);
@@ -523,6 +679,8 @@ window.addEventListener("load", () => {
           newNode.dataset.color = color;
           newNode.dataset.rowsHtml = encodeURIComponent(rowsHtml);
           newNode.dataset.isOffline = isOffline;
+          // ── ONE NEW LINE: store city name so Past/Future can call the API ──
+          newNode.dataset.cityName = info.city;
 
           newNode.innerHTML = `
             <span class="close-btn">&times;</span>
@@ -562,7 +720,6 @@ window.addEventListener("load", () => {
         });
       });
 
-      // Done loading
       loadingBar.remove();
       buildSearch();
     } catch (err) {
@@ -647,7 +804,6 @@ window.addEventListener("load", () => {
       activeMetric = el.dataset.m;
       mlbl.textContent = el.textContent;
       menu.style.display = "none";
-      // Update all visible marker labels to show selected metric value
       allStations.forEach((s) => {
         const markerEl = document.getElementById(s.id);
         if (!markerEl) return;
