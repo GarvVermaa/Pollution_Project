@@ -20,9 +20,7 @@ services:
       - key: FRONTEND_URL
         value: https://vayu-frontend.onrender.com
 
-  - type: web
+  - type: static
     name: vayu-frontend
-    runtime: static
     rootDir: FrontEnd
     staticPublishPath: .
-    plan: free
