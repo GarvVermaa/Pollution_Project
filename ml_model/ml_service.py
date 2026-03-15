@@ -44,8 +44,7 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 
 # CSV data lives one level up in Backend/data/
-DATA_DIR = os.path.join(BASE_DIR, "..", "Backend", "data")
-AQI_CSV  = os.path.join(DATA_DIR, "city_data.json")   # already parsed JSON
+AQI_CSV = os.path.join(BASE_DIR, "city_data.json")
 
 # ── Load model + scaler at startup ───────────────────────────────────
 rf_model = None
