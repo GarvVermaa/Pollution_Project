@@ -8,9 +8,9 @@ const router = express.Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── Load all data files once at startup (fast in-memory reads) ──────────────
-const cityData   = JSON.parse(readFileSync(join(__dirname, "../data/city_data.json"),   "utf8"));
-const corrData   = JSON.parse(readFileSync(join(__dirname, "../data/corr_data.json"),   "utf8"));
-const metaData   = JSON.parse(readFileSync(join(__dirname, "../data/meta_data.json"),   "utf8"));
+const cityData = JSON.parse(readFileSync(join(__dirname, "../data/city_data.json"), "utf8"));
+const corrData = JSON.parse(readFileSync(join(__dirname, "../data/corr_data.json"), "utf8"));
+const metaData = JSON.parse(readFileSync(join(__dirname, "../data/meta_data.json"), "utf8"));
 const cityCoords = JSON.parse(readFileSync(join(__dirname, "../data/city_coords.json"), "utf8"));
 
 // ML service URL — set ML_SERVICE_URL env var on Render to the internal URL of vayu-ml-service
@@ -34,6 +34,15 @@ function getAQIColor(aqi) {
   if (aqi <= 400) return "#9c27b0";
   return "#6a0080";
 }
+
+// AbortController function to reduce repetition
+function fetchWithTimeout(url, ms = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 
 // ════════════════════════════════════════════════════════════════════
 // PAST — reads from city_data.json (loaded at startup, instant)
@@ -66,11 +75,11 @@ router.get("/past/city/:cityName", (req, res) => {
   // Year-over-year summary
   const byYear = {};
   rows.forEach((r) => {
-    if (!byYear[r.year]) byYear[r.year] = [];
-    if (r.pm25) byYear[r.year].push(r.pm25);
+    if (!byYear[r.year]) byYear[r.year] = []; // If the year is not already in the Array create it
+    if (r.pm25) byYear[r.year].push(r.pm25); // Similar to push_back in vector
   });
   const yoy = Object.entries(byYear)
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => a - b) //Sorting like Comparator
     .map(([year, vals], i, arr) => {
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
       const prevAvg =
@@ -96,6 +105,8 @@ router.get("/past/city/:cityName", (req, res) => {
   });
 });
 
+//! Need to Fix this 
+
 // ── Build synthetic station records from static data (used as fallback) ──────
 // Returns records in the same shape as CPCB API so data-loader.js needs no changes
 function buildFallbackRecords() {
@@ -107,14 +118,14 @@ function buildFallbackRecords() {
     const latest = rows[rows.length - 1];
     if (!latest.pm25) return;
     records.push({
-      station:      city + " — Historical",
+      station: city + " — Historical",
       city,
-      latitude:     String(coords.lat),
-      longitude:    String(coords.lng),
+      latitude: String(coords.lat),
+      longitude: String(coords.lng),
       pollutant_id: "PM2.5",
-      avg_value:    String(latest.pm25),
-      min_value:    String(latest.pm25),
-      max_value:    String(latest.pm25),
+      avg_value: String(latest.pm25),
+      min_value: String(latest.pm25),
+      max_value: String(latest.pm25),
     });
   });
   return records;
@@ -123,18 +134,15 @@ function buildFallbackRecords() {
 // ════════════════════════════════════════════════════════════════════
 // STATIONS — live CPCB with static fallback
 router.get("/stations", async (req, res) => {
-  const CACHE_KEY = "__all_stations__";
-  const cached = liveCache.get(CACHE_KEY);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+  const CACHE_KEY = "__all_stations__"; // just a stringto use as the key name inside the Map
+  const cached = liveCache.get(CACHE_KEY); // This means get all stations 
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) { // If the difference is less than 30mins, the cache is still fresh so we  skip the API call entirely. 
     return res.json({ status: "ok", records: cached.data, cached: true, source: cached.source });
   }
 
   // ── Try live CPCB API first ──
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    const response = await fetch(CPCB_URL, { signal: controller.signal })
-      .finally(() => clearTimeout(timer));
+    const response = await fetchWithTimeout(CPCB_URL, 12000);
 
     if (!response.ok) throw new Error("CPCB API returned " + response.status);
     const json = await response.json();
@@ -145,6 +153,9 @@ router.get("/stations", async (req, res) => {
     return res.json({ status: "ok", records, cached: false, source: "live" });
 
   } catch (liveErr) {
+
+    //! Need to Fix this , this is literally storing Synthetic Data inside LIVE cache 
+
     // ── Fallback to static city_data.json + city_coords.json ──
     console.warn("CPCB API unavailable, serving static fallback:", liveErr.message);
     const records = buildFallbackRecords();
@@ -176,11 +187,7 @@ router.get("/present/city/:cityName", async (req, res) => {
   }
 
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    const response = await fetch(CPCB_URL, { signal: controller.signal })
-      .finally(() => clearTimeout(timer));
-
+    const response = await fetchWithTimeout(CPCB_URL, 12000);
     const json = await response.json();
     const records = json.records || [];
 
