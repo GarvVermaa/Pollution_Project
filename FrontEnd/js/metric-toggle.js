@@ -1,6 +1,6 @@
 "use strict";
 // ════════════════════════════════════════════
-// METRIC TOGGLE — AQI / PM2.5 / PM10 / NO2 pill
+// METRIC TOGGLE — AQI / PM2.5 / PM10 / NO2 / WATER / SOIL pill
 // ════════════════════════════════════════════
 function initMetricToggle() {
   const pill = document.getElementById("metricPill");
@@ -28,19 +28,25 @@ function initMetricToggle() {
       menu.style.display = "none";
 
       const isWater = el.dataset.m === "WATER";
+      const isSoil = el.dataset.m === "SOIL";
 
       // ── Show/hide water markers ──
       Object.values(window.VAYU.waterMarkers || {}).forEach((marker) => {
         if (marker._icon) marker._icon.style.display = isWater ? "" : "none";
       });
 
+      // ── Show/hide soil layer (uses LayerGroup, not individual icons) ──
+      if (typeof window.toggleSoilMarkers === "function") {
+        window.toggleSoilMarkers(isSoil);
+      }
+
       // ── Show/hide AQI markers ──
       window.VAYU.allStations.forEach((s) => {
         const markerEl = document.getElementById(s.id);
         if (!markerEl) return;
-        markerEl.style.display = isWater ? "none" : "";
+        markerEl.style.display = isWater || isSoil ? "none" : "";
 
-        if (!isWater) {
+        if (!isWater && !isSoil) {
           const span = markerEl.querySelector("span");
           const circle = markerEl.querySelector(".aqi-circle");
           if (!span || !circle) return;
