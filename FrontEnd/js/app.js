@@ -17,6 +17,8 @@ window.addEventListener("load", () => {
     waterMarkers: {}, // ← added
     activeMetric: "AQI",
     map: null,
+    allSoilDistricts: [],
+    soilMarkers: {},
   };
   // ── Config ──
   window.VAYU_CONFIG = {
@@ -64,4 +66,5 @@ window.addEventListener("load", () => {
   initMetricToggle();
   fetchPollutionData();
   fetchWaterData();
+  fetchSoilData();
 });
