@@ -122,6 +122,23 @@ async function fetchPollutionData() {
     });
 
     loadingBar.remove();
+
+    if (data.live_available === false) {
+      const fallbackBanner = document.createElement("div");
+      fallbackBanner.id = "fallbackBanner";
+      fallbackBanner.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:9999;" +
+        "background:#ff7c00;color:#000;font-size:12px;font-weight:600;" +
+        "padding:6px 16px;text-align:center;letter-spacing:.3px;";
+      fallbackBanner.innerHTML =
+        "⚠ Showing historical data — live AQI unavailable" +
+        (data.fallback_reason ? ` (${data.fallback_reason})` : "") +
+        ' &nbsp;<button onclick="this.parentElement.remove()" ' +
+        'style="background:none;border:1px solid #000;cursor:pointer;' +
+        'font-size:11px;padding:1px 6px;border-radius:3px;">Dismiss</button>';
+      document.body.prepend(fallbackBanner);
+    }
+
     buildSearch();
 
   } catch (err) {

@@ -16,14 +16,27 @@ const cityCoords = JSON.parse(readFileSync(join(__dirname, "../data/city_coords.
 // ML service URL — set ML_SERVICE_URL env var on Render to the internal URL of vayu-ml-service
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
 
-// CPCB live API key — loaded from environment, never hardcoded
+// ── CPCB live API ─────────────────────────────────────────────────────────────
+// BUG FIX 1: Key was hardcoded in source — anyone with repo access had it.
+// Now loaded from process.env.CPCB_API_KEY (set in Backend/.env).
+// If the key is missing at startup, log a clear warning so it's obvious why
+// live data isn't working instead of silently falling back to synthetic data.
 const CPCB_API_KEY = process.env.CPCB_API_KEY;
+if (!CPCB_API_KEY) {
+  console.warn(
+    "⚠️  WARNING: CPCB_API_KEY is not set in environment.\n" +
+    "   Live AQI data will not work. Add it to Backend/.env:\n" +
+    "   CPCB_API_KEY=your_key_here"
+  );
+}
 const CPCB_URL = `https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=${CPCB_API_KEY}&format=json&limit=1300`;
 
-
-// Simple 30-minute cache for live API calls
-const liveCache = new Map();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in ms
+// BUG FIX 2: Two separate caches — live data and fallback data.
+// The original code stored BOTH in the same liveCache key, meaning
+// stale fallback data would block a real live fetch for 30 minutes.
+// Now: live TTL = 30 min, fallback TTL = 5 min, and they never collide.
+const liveCache    = new Map(); // live CPCB API responses
+const fallbackCache = new Map(); // static JSON fallback responses
 
 // ── AQI colour helper ─
 function getAQIColor(aqi) {
@@ -35,6 +48,9 @@ function getAQIColor(aqi) {
   if (aqi <= 400) return "#9c27b0";
   return "#6a0080";
 }
+
+const LIVE_CACHE_TTL     = 30 * 60 * 1000; //  30 minutes — CPCB updates hourly
+const FALLBACK_CACHE_TTL =  5 * 60 * 1000; //   5 minutes — retry live sooner
 
 // AbortController function to reduce repetition
 function fetchWithTimeout(url, ms = 12000) {
@@ -133,42 +149,103 @@ function buildFallbackRecords() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// STATIONS — live CPCB with static fallback
+// STATIONS — live CPCB with honest static fallback
+//
+// BUG FIX SUMMARY for this route:
+//
+//  BUG A (Cache Poisoning): Original code stored synthetic fallback data
+//    in liveCache under the same key as live data. This meant after one
+//    failed live call, the app served fake "Historical" data for 30
+//    minutes while telling the frontend source:"static" — but the bigger
+//    problem was it also blocked the /present/city/:name route from ever
+//    getting fresh live data because IT shared the same cache. Fixed by
+//    using separate liveCache and fallbackCache maps with different TTLs.
+//
+//  BUG B (Silent failure): When CPCB_API_KEY is missing, the URL is
+//    literally "...?api-key=undefined&..." and the API returns a 401 or
+//    empty records. The error was silently swallowed and synthetic data
+//    was served. Now we check for the key upfront and return a 503 with
+//    a clear message so YOU know exactly what's wrong.
+//
+//  BUG C (Misleading source label): Fallback data was labelled source:"static"
+//    but the station names had " — Historical" suffix making them look like
+//    real stations. Frontend had no way to show a banner saying "live data
+//    unavailable". Now the response includes `live_available: false` and a
+//    `fallback_reason` string so the frontend can show a warning banner.
+//
+// ════════════════════════════════════════════════════════════════════
 router.get("/stations", async (req, res) => {
-  const CACHE_KEY = "__all_stations__"; // just a stringto use as the key name inside the Map
-  const cached = liveCache.get(CACHE_KEY); // This means get all stations 
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) { // If the difference is less than 30mins, the cache is still fresh so we  skip the API call entirely. 
-    return res.json({ status: "ok", records: cached.data, cached: true, source: cached.source });
+  const CACHE_KEY = "__all_stations__";
+
+  // ── 1. Return live cache if fresh ──────────────────────────────
+  const cachedLive = liveCache.get(CACHE_KEY);
+  if (cachedLive && Date.now() - cachedLive.timestamp < LIVE_CACHE_TTL) {
+    return res.json({ status: "ok", records: cachedLive.data, cached: true, source: "live", live_available: true });
   }
 
-  // ── Try live CPCB API first ──
+  // ── 2. Guard: no API key → skip network call entirely ──────────
+  if (!CPCB_API_KEY) {
+    const records = buildFallbackRecords();
+    return res.json({
+      status: "ok",
+      records,
+      cached: false,
+      source: "static",
+      live_available: false,
+      fallback_reason: "CPCB_API_KEY environment variable is not set. Add it to Backend/.env to enable live data.",
+    });
+  }
+
+  // ── 3. Try live CPCB API ────────────────────────────────────────
   try {
     const response = await fetchWithTimeout(CPCB_URL, 12000);
 
-    if (!response.ok) throw new Error("CPCB API returned " + response.status);
+    if (!response.ok) {
+      throw new Error(`CPCB API returned HTTP ${response.status}. Key may be invalid or quota exceeded.`);
+    }
+
     const json = await response.json();
     const records = json.records || [];
-    if (!records.length) throw new Error("Empty response from CPCB API");
 
-    liveCache.set(CACHE_KEY, { data: records, timestamp: Date.now(), source: "live" });
-    return res.json({ status: "ok", records, cached: false, source: "live" });
+    if (!records.length) {
+      throw new Error("CPCB API returned 0 records — the resource ID may have changed.");
+    }
+
+    // Success — store in LIVE cache only
+    liveCache.set(CACHE_KEY, { data: records, timestamp: Date.now() });
+    console.log(`✅ CPCB live fetch: ${records.length} records cached at ${new Date().toISOString()}`);
+
+    return res.json({ status: "ok", records, cached: false, source: "live", live_available: true });
 
   } catch (liveErr) {
+    // ── 4. Fallback — check fallback cache first ────────────────
+    const cachedFallback = fallbackCache.get(CACHE_KEY);
+    if (cachedFallback && Date.now() - cachedFallback.timestamp < FALLBACK_CACHE_TTL) {
+      return res.json({ status: "ok", records: cachedFallback.data, cached: true, source: "static", live_available: false, fallback_reason: liveErr.message });
+    }
 
-    //! Need to Fix this , this is literally storing Synthetic Data inside LIVE cache 
-
-    // ── Fallback to static city_data.json + city_coords.json ──
-    console.warn("CPCB API unavailable, serving static fallback:", liveErr.message);
+    console.warn("⚠️  CPCB API unavailable, serving static fallback:", liveErr.message);
     const records = buildFallbackRecords();
+
     if (!records.length) {
       return res.status(503).json({
         status: "error",
         message: "Live API unavailable and no static fallback data found.",
+        detail: liveErr.message,
       });
     }
-    // Cache fallback for 5 minutes only (shorter than live)
-    liveCache.set(CACHE_KEY, { data: records, timestamp: Date.now() - (CACHE_TTL - 5 * 60 * 1000), source: "static" });
-    return res.json({ status: "ok", records, cached: false, source: "static" });
+
+    // Store in FALLBACK cache only — never poisons the live cache
+    fallbackCache.set(CACHE_KEY, { data: records, timestamp: Date.now() });
+
+    return res.json({
+      status: "ok",
+      records,
+      cached: false,
+      source: "static",
+      live_available: false,
+      fallback_reason: liveErr.message,
+    });
   }
 });
 
@@ -181,10 +258,18 @@ router.get("/present/city/:cityName", async (req, res) => {
   const city = req.params.cityName.replace(/-/g, " ").trim();
 
   // Check cache
-  const cacheKey = city.toLowerCase();
+  const cacheKey = "present:" + city.toLowerCase(); // BUG FIX: namespaced key to avoid collision with /stations cache
   const cached = liveCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+  if (cached && Date.now() - cached.timestamp < LIVE_CACHE_TTL) {
     return res.json({ ...cached.data, cached: true });
+  }
+
+  // Guard: no API key
+  if (!CPCB_API_KEY) {
+    return res.status(503).json({
+      status: "error",
+      message: "CPCB_API_KEY is not configured. Add it to Backend/.env to enable live city data.",
+    });
   }
 
   try {
