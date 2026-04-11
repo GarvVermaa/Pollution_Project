@@ -16,9 +16,10 @@ const cityCoords = JSON.parse(readFileSync(join(__dirname, "../data/city_coords.
 // ML service URL — set ML_SERVICE_URL env var on Render to the internal URL of vayu-ml-service
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
 
-// CPCB live API key
-const CPCB_API_KEY = "579b464db66ec23bdd0000016e3b38c59991434d4ddf38a3b7f5e077";
+// CPCB live API key — loaded from environment, never hardcoded
+const CPCB_API_KEY = process.env.CPCB_API_KEY;
 const CPCB_URL = `https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=${CPCB_API_KEY}&format=json&limit=1300`;
+
 
 // Simple 30-minute cache for live API calls
 const liveCache = new Map();

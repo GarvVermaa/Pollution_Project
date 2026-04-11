@@ -1,0 +1,4 @@
+node_modules/   # rebuilt inside container by npm install
+*.log
+.env            # injected via docker-compose env_file, never baked in
+.env.*

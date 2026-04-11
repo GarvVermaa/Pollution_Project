@@ -1,0 +1,221 @@
+# ──────────────────────────────────────────────────────────────────
+# docker-compose.yml  (place this at the PROJECT ROOT)
+# ──────────────────────────────────────────────────────────────────
+#
+# 📖 WHAT IS DOCKER COMPOSE?
+# Docker Compose is the tool that runs MULTIPLE containers together
+# as one application. Instead of running `docker run ...` three times
+# with a dozen flags each, you define everything here and run:
+#
+#   docker compose up -d
+#
+# That's it. Compose reads this file, builds the images, creates the
+# network, and starts all containers in the right order.
+#
+# 📖 THE -d FLAG
+# -d means "detached" — containers run in the background.
+# Without -d, your terminal is locked to the logs until you Ctrl+C.
+# With -d, you get your terminal back and containers keep running.
+#
+# 📖 FILE FORMAT
+# This is YAML. Indentation is EVERYTHING in YAML — use spaces,
+# never tabs. 2-space indent is the convention here.
+# ──────────────────────────────────────────────────────────────────
+
+# The compose file format version. "3.8" supports all modern features
+# including health checks, named volumes, and secrets.
+version: "3.8"
+
+# ── SERVICES ──────────────────────────────────────────────────────
+# Each entry under `services:` is one container.
+# The key name (ml_service, backend, frontend) is both:
+#   - The container's name in Docker
+#   - The hostname other containers use to reach it on the network
+#     (e.g., backend can call http://ml_service:5001)
+services:
+
+  # ────────────────────────────────────────────────────────────────
+  # SERVICE 1: ml_service (Python Flask + scikit-learn model)
+  # Starts FIRST because backend depends on it.
+  # ────────────────────────────────────────────────────────────────
+  ml_service:
+
+    # `build:` tells Compose to build the image from a Dockerfile
+    # instead of pulling one from Docker Hub.
+    # `context:` is the folder Docker uses as the build root —
+    # all COPY instructions in the Dockerfile are relative to this.
+    build:
+      context: ./ml_model
+      dockerfile: Dockerfile
+
+    # Name the container for easy identification in `docker ps`
+    container_name: vayu_ml_service
+
+    # ── Restart policy ────────────────────────────────────────────
+    # "unless-stopped" means:
+    #   - Restart automatically if the container crashes
+    #   - Restart automatically when Docker Desktop restarts (e.g., reboot)
+    #   - Do NOT restart if you manually ran `docker compose stop`
+    # This is the recommended default for services you always want running.
+    restart: unless-stopped
+
+    # ── Environment variables ─────────────────────────────────────
+    # These are injected into the container's environment.
+    # The Flask app reads PORT via: os.environ.get("PORT", 5001)
+    environment:
+      - PORT=5001
+
+    # ── env_file ──────────────────────────────────────────────────
+    # Loads variables from a file into the container's environment.
+    # This is how secrets (like API keys) get in WITHOUT being
+    # written into this file (which you commit to git).
+    # The ml_model doesn't need CPCB key, but if you ever add one,
+    # create ml_model/.env and list it here.
+    # env_file:
+    #   - ./ml_model/.env   ← uncomment if you add ml-specific vars
+
+    # ── Ports ─────────────────────────────────────────────────────
+    # Format: "HOST_PORT:CONTAINER_PORT"
+    # This maps port 5001 on YOUR machine to port 5001 inside the
+    # container. So you can test the ML service directly at:
+    #   http://localhost:5001/predict?city=Delhi
+    #
+    # 🧠 The backend container reaches ml_service via the INTERNAL
+    # network (http://ml_service:5001), NOT through this host mapping.
+    # This mapping is only for YOU to test from your browser/curl.
+    ports:
+      - "5001:5001"
+
+    # ── Health check ──────────────────────────────────────────────
+    # Docker periodically runs this command inside the container to
+    # check if the service is actually working (not just "running").
+    # The backend will only start once this check passes.
+    #
+    # interval: check every 10 seconds
+    # timeout: give the command 5 seconds to respond
+    # retries: mark as "unhealthy" after 5 consecutive failures
+    # start_period: wait 30s before starting checks (model loading
+    #               takes time — scikit-learn pkl files are big)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # ── Networks ──────────────────────────────────────────────────
+    # Attach this container to our private network (defined below).
+    # Containers on the same network can reach each other by service
+    # name. Containers NOT on this network cannot reach them at all.
+    networks:
+      - vayu_network
+
+  # ────────────────────────────────────────────────────────────────
+  # SERVICE 2: backend (Node.js Express)
+  # ────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+
+    container_name: vayu_backend
+    restart: unless-stopped
+
+    # ── env_file ──────────────────────────────────────────────────
+    # 🔑 This is where secrets are injected.
+    # Backend/.env must contain:
+    #   PORT=5000
+    #   NODE_ENV=production
+    #   ML_SERVICE_URL=http://ml_service:5001   ← service name, not localhost!
+    #   FRONTEND_URL=http://localhost
+    #   CPCB_API_KEY=your_real_key_here
+    #
+    # Backend/.env is in .gitignore — it never goes to GitHub.
+    # Every developer creates their own copy from env.example.
+    env_file:
+      - ./Backend/.env
+
+    ports:
+      - "5000:5000"
+
+    # ── depends_on ────────────────────────────────────────────────
+    # Tells Compose the startup ORDER and CONDITIONS.
+    #
+    # "condition: service_healthy" means: don't start the backend
+    # until ml_service's health check is passing. This prevents the
+    # backend from booting and immediately failing when it tries to
+    # call the ML service that isn't ready yet.
+    #
+    # Without this, both start simultaneously and the backend's first
+    # ML prediction call would fail with "connection refused".
+    depends_on:
+      ml_service:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    networks:
+      - vayu_network
+
+  # ────────────────────────────────────────────────────────────────
+  # SERVICE 3: frontend (Nginx serving static files + proxying /api)
+  # ────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+
+    container_name: vayu_frontend
+    restart: unless-stopped
+
+    # ── Port 80 ───────────────────────────────────────────────────
+    # This maps port 80 on your machine to port 80 in the container.
+    # So visiting http://localhost in your browser opens the app.
+    # No port number needed — port 80 is the default for http://
+    ports:
+      - "80:80"
+
+    # Frontend waits for backend to be healthy before starting.
+    # This way Nginx never boots when the backend it proxies to
+    # is completely unavailable.
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - vayu_network
+
+# ── NETWORKS ──────────────────────────────────────────────────────
+# 📖 DOCKER NETWORKS EXPLAINED
+#
+# By default, containers are isolated — they can't see each other.
+# Defining a network and attaching all services to it creates a
+# private LAN just for your containers.
+#
+# Inside this network:
+#   - Containers call each other by SERVICE NAME (ml_service, backend)
+#   - Docker has a built-in DNS server that resolves these names
+#   - Nothing outside Docker can reach containers directly EXCEPT
+#     through the ports you've explicitly mapped above
+#
+# `driver: bridge` is the default and most common network type.
+# Bridge = a virtual Ethernet switch inside Docker.
+networks:
+  vayu_network:
+    driver: bridge
+
+# ── QUICK REFERENCE COMMANDS ──────────────────────────────────────
+# Start everything (background):    docker compose up -d
+# Start and see logs:               docker compose up
+# Stop everything:                  docker compose down
+# Stop AND delete volumes:          docker compose down -v
+# Rebuild after code changes:       docker compose up -d --build
+# See running containers:           docker ps
+# See logs of one service:          docker compose logs backend -f
+# Open a shell in a container:      docker compose exec backend sh
+# See resource usage:               docker stats

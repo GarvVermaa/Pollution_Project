@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# The notebook used to TRAIN the model — not needed at runtime
+save_models.py
+
+# Any stray data folders or CSVs
+data/
+*.csv
+
+# Virtual environments if anyone created one locally
+venv/
+.venv/
+env/
+
+# Test files
+*.ipynb

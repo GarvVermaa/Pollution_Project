@@ -7,7 +7,7 @@
 const SOIL_API =
   window.VAYU_CONFIG?.API_BASE ||
   window.VAYU_API_BASE ||
-  "http://localhost:5000/api";
+  "/api";
 
 const SOIL_PARAM_ICONS = {
   Nitrogen: "🌿",
